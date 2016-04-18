@@ -143,37 +143,45 @@ class ET_Configure(ET_Constructor):
 ##
 ########
 class ET_Get(ET_Constructor):
-    def __init__(self, auth_stub, obj_type, props = None, search_filter = None, options = None):        
+    def __init__(self, auth_stub, obj_type, props=None, search_filter=None,
+                 options=None, ClientIDs=[], QueryAllAccounts=False):
         auth_stub.refresh_token()
-        
-        if props is None:   #if there are no properties to retrieve for the obj_type then return a Description of obj_type
+
+        # if there are no properties to retrieve for the obj_type then
+        # return a Description of obj_type
+        if props is None:
             describe = ET_Describe(auth_stub, obj_type)
             props = []
             for prop in describe.results[0].Properties:
                 if prop.IsRetrievable:
-                    props.append(prop.Name) 
+                    props.append(prop.Name)
 
         ws_retrieveRequest = auth_stub.soap_client.factory.create('RetrieveRequest')
-                
+        print('ClientIDs: {}'.format(ClientIDs))
+        ws_retrieveRequest.ClientIDs = ClientIDs
+        print('QueryAllAccounts: {}'.format(QueryAllAccounts))
+        ws_retrieveRequest.QueryAllAccounts = QueryAllAccounts
+
         if props is not None:
-            if type(props) is dict: # If the properties is a hash, then we just want to use the keys
+            # If the properties is a hash, then we just want to use the keys
+            if type(props) is dict:
                 ws_retrieveRequest.Properties = props.keys
             else:
                 ws_retrieveRequest.Properties = props
 
         if search_filter is not None:
-            if search_filter.has_key('LogicalOperator'):
+            if 'LogicalOperator' in search_filter:
                 ws_simpleFilterPartLeft = auth_stub.soap_client.factory.create('SimpleFilterPart')
                 for prop in ws_simpleFilterPartLeft:
-                    #print prop[0]
-                    if prop[0] in search_filter['LeftOperand']:         
-                        ws_simpleFilterPartLeft[prop[0]] = search_filter['LeftOperand'][prop[0]]    
-                        
+                    # print prop[0]
+                    if prop[0] in search_filter['LeftOperand']:
+                        ws_simpleFilterPartLeft[prop[0]] = search_filter['LeftOperand'][prop[0]]
+
                 ws_simpleFilterPartRight = auth_stub.soap_client.factory.create('SimpleFilterPart')
                 for prop in ws_simpleFilterPartRight:
                     if prop[0] in search_filter['RightOperand']:
                         ws_simpleFilterPartRight[prop[0]] = search_filter['RightOperand'][prop[0]]
-                        
+
                 ws_complexFilterPart = auth_stub.soap_client.factory.create('ComplexFilterPart')
                 ws_complexFilterPart.LeftOperand = ws_simpleFilterPartLeft
                 ws_complexFilterPart.RightOperand = ws_simpleFilterPartRight
@@ -201,8 +209,8 @@ class ET_Get(ET_Constructor):
                     ws_retrieveRequest.Options[key] = value
 
         ws_retrieveRequest.ObjectType = obj_type
-        
-        response = auth_stub.soap_client.service.Retrieve(ws_retrieveRequest)       
+
+        response = auth_stub.soap_client.service.Retrieve(ws_retrieveRequest)
 
         if response is not None:
             super(ET_Get, self).__init__(response)
@@ -278,6 +286,8 @@ class ET_BaseObject(object):
     extProps = None
     search_filter = None
     options = None
+    ClientIDs = None
+    QueryAllAccounts = None
 
 ########
 ##
@@ -291,6 +301,8 @@ class ET_GetSupport(ET_BaseObject):
         props = self.props
         search_filter = self.search_filter
         options = self.options
+        ClientIDs = self.ClientIDs
+        QueryAllAccounts = self.QueryAllAccounts
         
         if m_props is not None and type(m_props) is list:
             props = m_props     
@@ -303,7 +315,7 @@ class ET_GetSupport(ET_BaseObject):
         if m_options is not None and type(m_filter) is dict:
             options = m_options
 
-        obj = ET_Get(self.auth_stub, self.obj_type, props, search_filter, options)
+        obj = ET_Get(self.auth_stub, self.obj_type, props, search_filter, options, ClientIDs, QueryAllAccounts)
         if obj is not None:
             self.last_request_id = obj.request_id
         return obj
