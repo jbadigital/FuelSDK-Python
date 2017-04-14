@@ -10,12 +10,12 @@ class ET_ContentArea(ET_CUDSupport):
         super(ET_ContentArea, self).__init__()
         self.obj_type = 'ContentArea'
 
-########
-##
-##  wrap an Exact Target DataFolder
-##
-########
-class ET_Folder(ET_CUDSupport): 
+
+class ET_Folder(ET_CUDSupport):
+    """
+    wrap an Exact Target DataFolder
+    Folders
+    """
     def __init__(self):
         super(ET_Folder, self).__init__()
         self.obj_type = 'DataFolder'

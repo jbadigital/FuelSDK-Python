@@ -261,12 +261,11 @@ class ET_Continue(ET_Constructor):
         if response is not None:
             super(ET_Continue, self).__init__(response)
 
-########
-##
-##  set up variables for children objects to share
-##
-########
+
 class ET_BaseObject(object):
+    """
+    Set up variables for children objects to share
+    """
     auth_stub = None
     obj = None
     last_request_id = None
@@ -276,21 +275,23 @@ class ET_BaseObject(object):
     search_filter = None
     options = None
 
-########
-##
-##  make sure needed information is available and then make the call to ET_Get to call the webservice
-##
-########
+
 class ET_GetSupport(ET_BaseObject):
-    obj_type = 'ET_GetSupport'   #should be overwritten by inherited class
-    
-    def get(self, m_props = None, m_filter = None, m_options = None):
+    """
+    Make sure needed information is available and then make the call to ET_Get
+    to call the webservice
+    """
+    obj_type = 'ET_GetSupport'  # should be overwritten by inherited class
+
+    def get(self, m_props=None, m_filter=None, m_options=None):
+        """
+        """
         props = self.props
         search_filter = self.search_filter
         options = self.options
-        
+
         if m_props is not None and type(m_props) is list:
-            props = m_props     
+            props = m_props
         elif self.props is not None and type(self.props) is dict:
             props = self.props.keys()
 
@@ -304,18 +305,23 @@ class ET_GetSupport(ET_BaseObject):
         if obj is not None:
             self.last_request_id = obj.request_id
         return obj
-    
+
     def info(self):
+        """
+        """
         obj = ET_Describe(self.auth_stub, self.obj_type)
         if obj is not None:
             self.last_request_id = obj.request_id
         return obj
-    
+
     def getMoreResults(self):
+        """
+        """
         obj = ET_Continue(self.auth_stub, self.last_request_id)
         if obj is not None:
             self.last_request_id = obj.request_id
         return obj
+
 
 ########
 ##
@@ -381,33 +387,38 @@ class ET_DeleteRest(ET_Constructor):
         obj = super(ET_DeleteRest, self).__init__(r, True)
         return obj
 
-########
-##
-##  Get data
-##
-########
+
 class ET_CUDSupport(ET_GetSupport):
-    
+    """
+    Get data
+    """
+
     def __init__(self):
         super(ET_CUDSupport, self).__init__()
-        
+
     def post(self):
+        """
+        """
         if self.extProps is not None:
             for k, v in self.extProps.iteritems():
                 self.props[k.capitalize] = v
-        
+
         obj = ET_Post(self.auth_stub, self.obj_type, self.props)
         if obj is not None:
             self.last_request_id = obj.request_id
         return obj
-    
+
     def patch(self):
+        """
+        """
         obj = ET_Patch(self.auth_stub, self.obj_type, self.props)
         if obj is not None:
             self.last_request_id = obj.request_id
         return obj
 
     def delete(self):
+        """
+        """
         obj = ET_Delete(self.auth_stub, self.obj_type, self.props)
         if obj is not None:
             self.last_request_id = obj.request_id
