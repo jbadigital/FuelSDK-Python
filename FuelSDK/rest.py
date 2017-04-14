@@ -2,40 +2,40 @@ import requests
 import json
 import copy
 
-    
-########
-##
-##  Parent class used to determine what status we are in depending on web service call results
-##
-########
+
 class ET_Constructor(object):
+    """
+    Parent class used to determine what status we are in depending on web
+    service call results
+    """
     results = []
     code = None
     status = False
     message = None
-    more_results = False                
+    more_results = False
     request_id = None
-    
-    def __init__(self, response = None, rest = False):
-        
-        if response is not None:    #if a response was returned from the web service call
-            if rest:    # result is from a REST web service call...
-                self.code = response.status_code            
+
+    def __init__(self, response=None, rest=False):
+        # if a response was returned from the web service call
+        if response is not None:
+            if rest:  # result is from a REST web service call...
+                self.code = response.status_code
                 if self.code == 200:
                     self.status = True
                 else:
-                    self.status = False 
-                        
+                    self.status = False
+
                 try:
                     self.results = response.json()
                 except:
                     self.message = response.json()
-                
-                #additional parsing will happen in the child object that called in to here.
-                
-            else:   #soap call
-                self.code = response[0] #suds puts the code in tuple position 0
-                body = response[1]  #and the result in tuple position 1
+
+                # additional parsing will happen in the child object that
+                # called in to here.
+
+            else:  # soap call
+                self.code = response[0]  # suds puts the code in tuple position 0
+                body = response[1]  # and the result in tuple position 1
 
                 # Store the Last Request ID for use with continue
                 if body and 'RequestID' in body:
@@ -49,20 +49,22 @@ class ET_Constructor(object):
                         if body['OverallStatus'] == "MoreDataAvailable":
                             self.more_results = True
                         elif body['OverallStatus'] != "OK":
-                            self.status = False 
-        
+                            self.status = False
+
                     body_container_tag = None
-                    if 'Results' in body:   #most SOAP responses are wrapped in 'Results'
+                    # most SOAP responses are wrapped in 'Results'
+                    if 'Results' in body:
                         body_container_tag = 'Results'
-                    elif 'ObjectDefinition' in body:   #Describe SOAP response is in 'ObjectDefinition'
+                    # Describe SOAP response is in 'ObjectDefinition'
+                    elif 'ObjectDefinition' in body:
                         body_container_tag = 'ObjectDefinition'
-                        
+
                     if body_container_tag is not None:
-                        self.results = body[body_container_tag]                 
+                        self.results = body[body_container_tag]
 
                 else:
                     self.status = False
-                    
+
     def parse_props_dict_into_ws_object(self, obj_type, ws_object, props_dict):
         for k, v in props_dict.items():
             if k in ws_object:
@@ -76,19 +78,23 @@ class ET_Constructor(object):
         empty_obj = auth_stub.soap_client.factory.create(obj_type)
         if props is not None and type(props) is dict:
             ws_create = copy.copy(empty_obj)
-            ws_create = self.parse_props_dict_into_ws_object(obj_type, ws_create, props)
+            ws_create = self.parse_props_dict_into_ws_object(
+                obj_type, ws_create, props)
             return ws_create
         elif props is not None and type(props) is list:
             ws_create_list = []
             for prop_dict in props:
-                #~ print str(datetime.now())+" - start"
+                # ~ print str(datetime.now())+" - start"
                 ws_create = copy.copy(empty_obj)
-                ws_create = self.parse_props_dict_into_ws_object(obj_type, ws_create, prop_dict)
-                #~ print str(datetime.now())+" - start"
+                ws_create = self.parse_props_dict_into_ws_object(
+                    obj_type, ws_create, prop_dict)
+                # ~ print str(datetime.now())+" - start"
                 ws_create_list.append(ws_create)
             return ws_create_list
         else:
-            message = 'Can not post properties to ' + obj_type + ' without a dict or list of properties'
+
+            message = ('Can not post properties to {} without a dict or list'
+                       ' of properties').format(obj_type)
             raise Exception(message)
 
 ########
@@ -205,15 +211,16 @@ class ET_Get(ET_Constructor):
         if response is not None:
             super(ET_Get, self).__init__(response)
 
-########
-##
-##  Call the Exact Target web service Create method
-##
-########
+
 class ET_Post(ET_Constructor):
-    def __init__(self, auth_stub, obj_type, props = None):
+    """
+    Call the Exact Target web service Create method
+    """
+    def __init__(self, auth_stub, obj_type, props=None):
         auth_stub.refresh_token()
-        response = auth_stub.soap_client.service.Create(None, self.parse_props_into_ws_object(auth_stub, obj_type, props))
+        response = auth_stub.soap_client.service.Create(
+            None, self.parse_props_into_ws_object(auth_stub, obj_type, props))
+
         if(response is not None):
             super(ET_Post, self).__init__(response)
 
@@ -390,7 +397,7 @@ class ET_DeleteRest(ET_Constructor):
 
 class ET_CUDSupport(ET_GetSupport):
     """
-    Get data
+    Get data via post, patch or delete.
     """
 
     def __init__(self):

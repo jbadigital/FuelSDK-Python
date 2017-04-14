@@ -11,12 +11,13 @@ import suds.wsse
 from suds.sax.element import Element
 
 
-from FuelSDK.objects import ET_DataExtension,ET_Subscriber
+from FuelSDK.objects import ET_DataExtension, ET_Subscriber
 
 
 class ET_Client(object):
     """
-    Setup web service connectivity by getting need config data, security tokens etc.
+    Setup web service connectivity by getting need config data, security
+    tokens etc.
     """
 
     debug = False
@@ -26,15 +27,16 @@ class ET_Client(object):
     wsdl_file_url = None
     authToken = None
     internalAuthToken = None
-    authTokenExpiration = None  #seconds since epoch that the current jwt token will expire
+    authTokenExpiration = None  # seconds since epoch that the current jwt token will expire
     refreshKey = None
     endpoint = None
     authObj = None
     soap_client = None
     auth_url = None
-        
-    ## get_server_wsdl - if True and a newer WSDL is on the server than the local filesystem retrieve it
-    def __init__(self, get_server_wsdl = False, debug = False, params = None, tokenResponse=None):
+
+    # get_server_wsdl - if True and a newer WSDL is on the server than the local filesystem retrieve it
+    def __init__(self, get_server_wsdl=False, debug=False, params=None,
+                 tokenResponse=None):
         self.debug = debug
         if debug:
             logging.basicConfig(level=logging.INFO)
@@ -45,7 +47,7 @@ class ET_Client(object):
         else:
             logging.getLogger('suds').setLevel(logging.INFO)
 
-        ## Read the config information out of config.python
+        # Read the config information out of config.python
         config = configparser.RawConfigParser()
         if os.path.exists(os.path.expanduser('~/.fuelsdk/config.python')):
             config.read(os.path.expanduser('~/.fuelsdk/config.python'))
@@ -102,7 +104,7 @@ class ET_Client(object):
 
         self.wsdl_file_url = self.load_wsdl(wsdl_server_url, wsdl_file_local_location, get_server_wsdl)
 
-        ## get the JWT from the params if passed in...or go to the server to get it             
+        # get the JWT from the params if passed in...or go to the server to get it             
         if(params is not None and 'jwt' in params):
             decodedJWT = jwt.decode(params['jwt'], self.appsignature)
             self.authToken = decodedJWT['request']['user']['oauthToken']
@@ -115,8 +117,7 @@ class ET_Client(object):
         else:
             self.refresh_token()
 
-
-    def load_wsdl(self, wsdl_url, wsdl_file_local_location, get_server_wsdl = False):
+    def load_wsdl(self, wsdl_url, wsdl_file_local_location, get_server_wsdl=False):
         """
         retrieve the url of the ExactTarget wsdl...either file: or http:
         depending on if it already exists locally or server flag is set and
@@ -170,36 +171,49 @@ class ET_Client(object):
         token = suds.wsse.UsernameToken('*', '*')
         security.tokens.append(token)
         self.soap_client.set_options(wsse=security)             
-        
 
-    def refresh_token(self, force_refresh = False):
+    def refresh_token(self, force_refresh=False):
         """
         Called from many different places right before executing a SOAP call
         """
-        #If we don't already have a token or the token expires within 5 min(300 seconds), get one
-        if (force_refresh or self.authToken is None or (self.authTokenExpiration is not None and time.time() + 300 > self.authTokenExpiration)):
-            headers = {'content-type' : 'application/json', 'user-agent' : 'FuelSDK-Python'}
+        # If we don't already have a token or the token expires within
+        # 5 min(300 seconds), get one
+        if (force_refresh or self.authToken is None or
+                (self.authTokenExpiration is not None and
+                    time.time() + 300 > self.authTokenExpiration)):
+            headers = {
+                'content-type': 'application/json',
+                'user-agent': 'FuelSDK-Python'}
             if (self.authToken is None):
-                payload = {'clientId' : self.client_id, 'clientSecret' : self.client_secret, 'accessType': 'offline'}
+                payload = {
+                    'clientId': self.client_id,
+                    'clientSecret': self.client_secret,
+                    'accessType': 'offline'}
             else:
-                payload = {'clientId' : self.client_id, 'clientSecret' : self.client_secret, 'refreshToken' : self.refreshKey, 'accessType': 'offline'}
+                payload = {
+                    'clientId': self.client_id,
+                    'clientSecret': self.client_secret,
+                    'refreshToken': self.refreshKey,
+                    'accessType': 'offline'}
             if self.refreshKey:
                 payload['refreshToken'] = self.refreshKey
 
-            r = requests.post(self.auth_url, data=json.dumps(payload), headers=headers)
+            r = requests.post(
+                self.auth_url, data=json.dumps(payload), headers=headers)
             tokenResponse = r.json()
-            
+
             if 'accessToken' not in tokenResponse:
-                raise Exception('Unable to validate App Keys(ClientID/ClientSecret) provided: ' + repr(r.json()))
-            
+                raise Exception(
+                    'Unable to validate App Keys(ClientID/ClientSecret)'
+                    ' provided: {}'.format(repr(r.json())))
+
             self.authToken = tokenResponse['accessToken']
             self.authTokenExpiration = time.time() + tokenResponse['expiresIn']
             self.internalAuthToken = tokenResponse['legacyToken']
             if 'refreshToken' in tokenResponse:
                 self.refreshKey = tokenResponse['refreshToken']
-        
+
             self.build_soap_client()
-            
 
     def determineStack(self):
         """

@@ -1,4 +1,14 @@
-from FuelSDK.rest import ET_CUDSupport,ET_CUDSupportRest,ET_GetSupport,ET_Get,ET_Patch,ET_Post,ET_Delete,ET_Configure,ET_Describe
+from FuelSDK.rest import (
+    ET_CUDSupport,
+    ET_CUDSupportRest,
+    ET_GetSupport,
+    ET_Get,
+    ET_Patch,
+    ET_Post,
+    ET_Delete,
+    ET_Configure,
+    ET_Describe
+)
 
 ########
 ##
